@@ -11,7 +11,7 @@ struct Pekusi {
     int nRootsbanal;
 };
 
-enum korny {
+enum Korni {
     NO_ROOTS     = 0,
     ONE_ROOTS    = 1,
     TWO_ROOTS    = 2,
