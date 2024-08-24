@@ -24,7 +24,8 @@ int RGB_test();
 int SolveSquare (double a, double b, double c, double* x1, double* x2);
 int input (double* a, double* b, double* c);
 int RTRTRTRTRTRTRTRTRT (int counter, Pekusi data);
-int switch_case(double a, double b, double c);
+int switch_case (double a, double b, double c);
+int linesolv(double* a, double* b, double* c, double* x1);
 
 
 int main() {
@@ -39,11 +40,12 @@ int main() {
 
 int SolveSquare (double a, double b, double c, double* x1, double* x2) {
 
-    assert (x1 != x2);
+    assert (x1 != NULL);
+    assert (x2 != NULL);
 
     if (fabs (a) < poltarachka_v_edinichke) {
         if (fabs (b) < poltarachka_v_edinichke) {
-           return (fabs (c) < poltarachka_v_edinichke) ? SS_INF_ROOTS : 0;
+           return (fabs (c) < poltarachka_v_edinichke) ? SS_INF_ROOTS : NO_ROOTS;
         }
         else {
             *x1 = -c / b;
@@ -65,12 +67,18 @@ int SolveSquare (double a, double b, double c, double* x1, double* x2) {
             *x1 = (-b - sqrt_d) / (2 * a);
             *x2 = (-b + sqrt_d) / (2 * a);
 
+            assert (fabs (x1 - x2) > poltarachka_v_edinichke);
+
             return TWO_ROOTS;
         }
     }
 }
 
 int input (double* a, double* b, double* c) {
+
+    assert (a != NULL);
+    assert (b != NULL);
+    assert (c != NULL);
 
     while (scanf ("%lg %lg %lg", a, b, c) != 3) {
         while (getchar() != '\n') {
@@ -99,13 +107,13 @@ int RTRTRTRTRTRTRTRTRT (int counter, Pekusi data) {
     else {
         txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_GREEN);
         printf ("test %d succeed\n", data.n1test);
-    return 1;
+        return 1;
     }
 }
 
 int RGB_test() {
     const int tests = 6;
-    Pekusi data[tests] = {
+    Pekusi data [tests] = {
     {1, 1, 0, -4, -2, 2, TWO_ROOTS},
     {.n1test = 2, .a = 1, .b = 0, .c = -4, .x1banal = -2, .x2banal = 2, .nRootsbanal = TWO_ROOTS},
     {3, 5, 6, 7, 0, 0, NO_ROOTS},
@@ -122,7 +130,7 @@ int RGB_test() {
 
 int choose (double* a, double* b, double* c) {
     char ch = getchar();
-    if (ch == '1') {
+    if (ch == '1') {      //TODO: switch case
         printf ("\n");
 
         printf ("вот сюда\n");
@@ -155,26 +163,26 @@ int switch_case (double a, double b, double c) {
         case NO_ROOTS:
         txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_RED);
         printf ("Ќет решений\n");
-        break;
+        return NO_ROOTS;
 
         case ONE_ROOTS:
         txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_GREEN);
         printf ("x = %lg\n", x1);
-        break;
+        return ONE_ROOTS;
 
         case TWO_ROOTS:
         txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_GREEN);
         printf ("x1 = %lg, x2 = %lg\n", x1, x2);
-        break;
+        return TWO_ROOTS;;
 
         case SS_INF_ROOTS:
         txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_GREEN);
         printf ("ќќќќќќќќќооооочень много решений");
-        break;
+        return SS_INF_ROOTS;
 
         default:
         txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_RED);
         printf (":main(): ERROR: nRoots = %d\n",nRoots);
-    return ONE_ROOTS;
+        break;
     }
 }
