@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+const int tests = 6;
 
 struct test_data {
     int test_square;
@@ -16,26 +17,48 @@ enum korni {
     NO_ROOTS     = 0,
     ONE_ROOTS    = 1,
     TWO_ROOTS    = 2,
-    SS_INF_ROOTS = -1
+    SS_INF_ROOTS = -1,
+    ERROR_ROOT   = 999
 };
 
-const double FRACTION = 0.001;
-const int ERROR_SWITCH = 999;
+enum solver_status {
+    SOLVER_OK    = 1,
+    SOLVER_ERROR = 0
+};
 
-bool compare_zero (double number);
-int linear_solve (double b, double c, double* x1);   //
-int general_quadratic_equation (double a, double b, double c, double* x1, double* x2);                   //
-int color_answer();
-int test_succed (test_data data);
-int failed_test (test_data data, double x1, double x2, int nRoots);
-int clean_buffer();//TODO clear is better than clean
-void choose();
+enum input_status {
+    INPUT_OK    = 1,
+    INPUT_ERROR = 2
+};
+
+enum test_result {
+    TEST_OK     = 1,
+    TEST_FAILED = 0
+};
+
+const test_data data[tests] = {
+    {1, 1,        0,       -4,       -2,  2, TWO_ROOTS},
+    {2, 0.1,      0.2,     -0.3,     -3,  1, TWO_ROOTS},
+    {3, 5,        6,        7,        0,  0, NO_ROOTS},
+    {4, 1,        2,        1,       -1, -1, ONE_ROOTS},
+    {5, 0.000001, 0.000002, 0.000001, 0,  0, SS_INF_ROOTS},//проверка на погрешность ебать
+    {6, 0,        0,        0,        0,  0, SS_INF_ROOTS}
+};
+const double FRACTION = 0.001;
+
 int RGB_test();
-int solve_square (double a, double b, double c, double* x1, double* x2);                            // TODO: rename all
-int input (double* a, double* b, double* c);/// good name
-int fast_test (int counter, test_data data);
+int clean_buffer();
+void color_answer();
+input_status choose();
+bool compare_zero (double number);
 int result (double a, double b, double c);
-int linear_solve (double* a, double* b, double* c, double* x1);  // TODO: use linear_solve
+int input (double* a, double* b, double* c);/// good name
+void print_test_succed_result (test_data data);
+test_result fast_test (int counter, test_data data);
+int linear_solve (double b, double c, double* x1);
+void print_failed_test_result (test_data data, double x1, double x2, int nRoots);
+int solve_square (double a, double b, double c, double* x1, double* x2);
+int general_quadratic_equation (double a, double b, double c, double* x1, double* x2);                               // TODO: rename all
 
 int main() {
 
@@ -52,13 +75,12 @@ int solve_square (double a, double b, double c, double* x1, double* x2) {
     assert (x1 != NULL);
     assert (x2 != NULL);
 
-    if (compare_zero (a)) {
+    if (compare_zero (a))
+        return linear_solve (b, c, x1);
+    else       // TODO: func like general_quadratic_equation
+        return general_quadratic_equation (a, b, c, x1, x2);
 
-        linear_solve (b, c, x1);
-    }
-    else {       // TODO: func like general_quadratic_equation
-        general_quadratic_equation (a, b, c, x1, x2);
-    }
+    return ERROR_ROOT;
 }
 
 int input (double* a, double* b, double* c) {
@@ -72,14 +94,17 @@ int input (double* a, double* b, double* c) {
         txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_RED);
         printf ("Попробуйте ещё раз\n");
     }
+
+    return INPUT_OK;
 }
 
-void choose () { //Доеб Сереги: почему возвращает только 0???
+input_status choose() { //Доеб Сереги: почему возвращает только 0???
 
     switch (getchar()) {
+
         case '0': {// TODO: make as func color_answer
-                color_answer();
-                break;
+            color_answer();
+            break;
         }
 
         case '1': {
@@ -87,53 +112,49 @@ void choose () { //Доеб Сереги: почему возвращает только 0???
             printf ("вот сюда\n");
             double a = 0, b = 0, c = 0;
             input (&a, &b, &c);
-            if (result (a, b, c) == ERROR_SWITCH) {
-                printf("АААА, крокодил в ванной!!!!");
-                exit(0);
+            if (result (a, b, c) == ERROR_ROOT) {
+                printf ("АААА, крокодил в ванной!!!!");
+
+                return INPUT_ERROR;
             }
-
         }
-        default:
-            exit(0);
 
+        default:
+            return INPUT_ERROR;
     }
+
+    return INPUT_ERROR;
 }
-int fast_test (int counter, test_data data) {
+
+test_result fast_test (int counter, test_data data) {
 
     double x1 = 0, x2 = 0;
     int nRoots = solve_square (data.a, data.b, data.c, &x1, &x2);
 
-    if (nRoots != data.n_roots_test_data || !compare_zero (x1 - data.x1_test_data) || (x2 - data.x2_test_data)) {//TODO: DON'T USE != with double!!!
-        failed_test (data, x1, x2, nRoots);/////
+    if (nRoots != data.n_roots_test_data || !compare_zero (x1 - data.x1_test_data) || (x2 - data.x2_test_data)) {
+        print_failed_test_result (data, x1, x2, nRoots);
 
-        return 0;
+        return TEST_FAILED;
     }
-    else {                                         // TODO: make as function
+    else {
 
-        test_succed (data);
+        print_test_succed_result (data);
 
-        return 1;
+        return TEST_OK;
     }
 }
+
 int RGB_test() {
 
-    const int tests = 6;
-    test_data data[tests] = {
-        {1, 1,        0,       -4,       -2,  2,   TWO_ROOTS},
-        {2, 0.1,      0.2,     -0.3,     -1,  0.3, TWO_ROOTS},
-        {3, 5,        6,        7,        0,  0,   NO_ROOTS},
-        {4, 1,        2,        1,       -1, -1,   ONE_ROOTS},
-        {5, 0.000001, 0.000002, 0.000001, 0,  0,   SS_INF_ROOTS},//проверка на погрешность ебать
-        {6, 0,        0,        0,        0,  0,   SS_INF_ROOTS}};
     int counter = 0;
 
     for (int i = 0; i < tests; i++)
-        counter += fast_test (i, data[i]);
+        if (fast_test (i, data[i]) == TEST_OK) {
+            counter += 1;
+        }
 
     return counter;
 }
-
-
 
 int result (double a, double b, double c) {
 
@@ -141,6 +162,7 @@ int result (double a, double b, double c) {
     int nRoots = solve_square (a, b, c, &x1, &x2);
 
     switch (nRoots) {
+
         case NO_ROOTS:
             txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_RED);
             printf ("Нет решений\n");
@@ -170,19 +192,13 @@ int result (double a, double b, double c) {
             break;
     }
 
-    return ERROR_SWITCH;
+    return ERROR_ROOT;
 }
 
 bool compare_zero (double number) {
 
-    if (fabs (number) < FRACTION) {
+    return fabs (number) < FRACTION;
 
-        return 1;
-    }
-    else {
-
-        return 0;
-    }
 }
 
 int clean_buffer() {
@@ -192,7 +208,7 @@ int clean_buffer() {
     }
 }
 
-int failed_test (test_data data, double x1, double x2, int nRoots) {
+void print_failed_test_result (test_data data, double x1, double x2, int nRoots) {
 
     txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_RED);
     printf ("Ошибка в тесте %d, a = %lg, b = %lg, c = %lg,"
@@ -203,7 +219,7 @@ int failed_test (test_data data, double x1, double x2, int nRoots) {
             data.x1_test_data, data.x2_test_data, data.n_roots_test_data);
 }
 
-int test_succed (test_data data) {
+void print_test_succed_result (test_data data) {
 
     txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_GREEN);
     printf ("тест %d успешен\n", data.test_square);
@@ -222,9 +238,10 @@ int linear_solve (double b, double c, double* x1) {
     }
 }
 
-int general_quadratic_equation(double a, double b, double c, double* x1, double* x2) {
+int general_quadratic_equation (double a, double b, double c, double* x1, double* x2) {
 
     double d = b * b - 4 * a * c;
+
     if (compare_zero (d)) {
         *x1 = *x2 = -b / (2 * a);
 
@@ -244,17 +261,21 @@ int general_quadratic_equation(double a, double b, double c, double* x1, double*
 
         return TWO_ROOTS;
     }
+
+    return ERROR_ROOT;
 }
 
-int color_answer() {
+void color_answer() {
 
     int counter = RGB_test();
+
     if (counter == 6) {
         txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_GREEN);
     }
     if (counter < 6) {
         txSetConsoleAttr (FOREGROUND_YELLOW | BACKGROUND_RED);
     }
+
     printf ("количество верных тестов %d", counter);
 }
 
